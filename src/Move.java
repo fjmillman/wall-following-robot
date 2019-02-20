@@ -1,41 +1,51 @@
-import lejos.hardware.port.MotorPort;
+import lejos.hardware.motor.Motor;
 import lejos.hardware.port.SensorPort;
-import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.hardware.sensor.EV3TouchSensor;
 import lejos.hardware.sensor.EV3UltrasonicSensor;
-import lejos.hardware.sensor.SensorMode;
-import lejos.robotics.RegulatedMotor;
 import lejos.robotics.SampleProvider;
 
 public class Move {
 
-	public static void main(String[] args) {
-		RegulatedMotor leftMotor = new EV3LargeRegulatedMotor(MotorPort.A);
-		RegulatedMotor rightMotor = new EV3LargeRegulatedMotor(MotorPort.D);
+    private static boolean isTouched(SampleProvider touchSampleProvider) {
+        float [] sample = new float[touchSampleProvider.sampleSize()];
+        touchSampleProvider.fetchSample(sample, 0);
+        return sample[0] == 1;
+    }
 
-		EV3TouchSensor touch = new EV3TouchSensor(SensorPort.S2);
-		SensorMode touchSamples = touch.getTouchMode();
-		float[] touchSample = new float[touchSamples.sampleSize()];
+    private static float getDistance(SampleProvider eyeSampleProvider) {
+        float [] sample = new float[eyeSampleProvider.sampleSize()];
+        eyeSampleProvider.fetchSample(sample, 0);
+        return sample[0];
+    }
 
-		EV3UltrasonicSensor eye = new EV3UltrasonicSensor(SensorPort.S1);
-		eye.enable();
-		SampleProvider eyeSamples = eye.getDistanceMode();
-		float[] eyeSample = new float[eyeSamples.sampleSize()];
-		
-		do {
-			leftMotor.forward();
-			rightMotor.forward();
+    public static void main(String[] args) {
+        EV3UltrasonicSensor eye = new EV3UltrasonicSensor(SensorPort.S1);
+        EV3TouchSensor touch = new EV3TouchSensor(SensorPort.S2);
 
-			touch.fetchSample(touchSample, 0);
-			eye.fetchSample(eyeSample, 0);
-		} while (touchSample[0] == 0 && eyeSample[0] > 10 && eyeSample[0] < 20);
+        eye.enable();
 
-		leftMotor.stop();
-		rightMotor.stop();
+        SampleProvider eyeSampleProvider = eye.getDistanceMode();
+        SampleProvider touchSampleProvider = touch.getTouchMode();
 
-		leftMotor.close();
-		rightMotor.close();
-		touch.close();
-	}
+        do {
+            if (getDistance(eyeSampleProvider) < 0.3) {
+                Motor.A.stop();
+                Motor.D.forward();
+            } else if (getDistance(eyeSampleProvider) > 0.5) {
+                Motor.A.forward();
+                Motor.D.stop();
+            } else {
+                Motor.A.forward();
+                Motor.D.forward();
+            }
+        } while (!isTouched(touchSampleProvider));
+
+        Motor.A.stop();
+        Motor.D.stop();
+
+        touch.close();
+        eye.disable();
+        eye.close();
+    }
 
 }
