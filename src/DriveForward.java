@@ -1,14 +1,12 @@
-import lejos.robotics.RegulatedMotor;
+import lejos.robotics.navigation.MovePilot;
 import lejos.robotics.subsumption.Behavior;
 
 public class DriveForward implements Behavior {
-    private RegulatedMotor leftMotor;
-    private RegulatedMotor rightMotor;
+    private MovePilot pilot;
     private boolean suppressed = false;
 
-    public DriveForward(RegulatedMotor firstMotor, RegulatedMotor secondMotor) {
-        leftMotor = firstMotor;
-        rightMotor = secondMotor;
+    public DriveForward(MovePilot pilot) {
+    	this.pilot = pilot;
     }
 
     public boolean takeControl() {
@@ -16,16 +14,13 @@ public class DriveForward implements Behavior {
     }
 
     public void suppress() {
-        suppressed = true;
+    	this.suppressed = true;
     }
 
     public void action() {
-        suppressed = false;
-        leftMotor.forward();
-        rightMotor.forward();
-        while( !suppressed )
-            Thread.yield();
-        leftMotor.stop();
-        rightMotor.stop();
+    	this.suppressed = false;
+    	this.pilot.forward();
+        while(!this.suppressed) { Thread.yield(); }
+        this.pilot.stop();
     }
 }

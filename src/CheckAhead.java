@@ -1,15 +1,18 @@
 import lejos.hardware.sensor.EV3UltrasonicSensor;
+import lejos.robotics.RegulatedMotor;
 import lejos.robotics.SampleProvider;
 import lejos.robotics.navigation.MovePilot;
 import lejos.robotics.subsumption.Behavior;
 
-public class WallTooClose implements Behavior {
+public class CheckAhead implements Behavior {
     private MovePilot pilot;
     private SampleProvider sampleProvider;
+    private RegulatedMotor eyeMotor;
     private boolean suppressed = false;
 
-    public WallTooClose(EV3UltrasonicSensor eye, MovePilot pilot) {
+    public CheckAhead(MovePilot pilot, RegulatedMotor eyeMotor, EV3UltrasonicSensor eye) {
         this.sampleProvider = eye.getDistanceMode();
+        this.eyeMotor = eyeMotor;
         this.pilot = pilot;
     }
 
@@ -20,7 +23,10 @@ public class WallTooClose implements Behavior {
     }
 
     public boolean takeControl() {
-        return this.getDistance() < 0.1;
+    	this.eyeMotor.rotate(90);
+    	boolean wallInFront = this.getDistance() < 0.3;
+    	this.eyeMotor.rotate(-90);
+        return wallInFront;
     }
 
     public void suppress() {
@@ -29,7 +35,6 @@ public class WallTooClose implements Behavior {
 
     public void action() {
     	this.suppressed = false;
-		this.pilot.rotate(20);
-		this.pilot.travel(8);
+		this.pilot.rotate(90);
     }
 }

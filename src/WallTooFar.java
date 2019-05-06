@@ -1,44 +1,35 @@
 import lejos.hardware.sensor.EV3UltrasonicSensor;
-import lejos.robotics.RegulatedMotor;
 import lejos.robotics.SampleProvider;
+import lejos.robotics.navigation.MovePilot;
 import lejos.robotics.subsumption.Behavior;
 
 public class WallTooFar implements Behavior {
-    private RegulatedMotor leftMotor;
-    private RegulatedMotor rightMotor;
+    private MovePilot pilot;
     private SampleProvider sampleProvider;
     private boolean suppressed = false;
 
-    public WallTooFar(EV3UltrasonicSensor eye, RegulatedMotor firstMotor, RegulatedMotor secondMotor) {
-        sampleProvider = eye.getDistanceMode();
-        leftMotor = firstMotor;
-        rightMotor = secondMotor;
-
+    public WallTooFar(EV3UltrasonicSensor eye, MovePilot pilot) {
+        this.sampleProvider = eye.getDistanceMode();
+        this.pilot = pilot;
     }
 
     private float getDistance() {
-        float [] sample = new float[sampleProvider.sampleSize()];
-        sampleProvider.fetchSample(sample, 0);
+        float [] sample = new float[this.sampleProvider.sampleSize()];
+        this.sampleProvider.fetchSample(sample, 0);
         return sample[0];
     }
 
     public boolean takeControl() {
-        return getDistance() > 0.5;
+        return this.getDistance() > 0.15;
     }
 
     public void suppress() {
-        suppressed = true;
+    	this.suppressed = true;
     }
 
     public void action() {
-        suppressed = false;
-        leftMotor.rotate(-360, true);
-        rightMotor.rotate(-240, true);
-
-        while( rightMotor.isMoving() && !suppressed )
-            Thread.yield();
-
-        leftMotor.stop();
-        rightMotor.stop();
+    	this.suppressed = false;
+    	this.pilot.rotate(-20);
+		this.pilot.travel(8);
     }
 }
